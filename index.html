@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File System Snapshot & Behaviour Diff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <p class="eyebrow">Security Lab</p>
+        <h1>File System Snapshot & Behaviour Diff</h1>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="load-demo" class="ghost">Load Demo Data</button>
+      <button id="reset" class="ghost danger">Reset</button>
+      <a class="primary" href="#how-it-works">How it works</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="panel grid" id="input-panel">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Step 1</p>
+          <h2>Capture Snapshot 1 (Before)</h2>
+          <p class="subtext">Provide an accessible directory path on the backend host (Windows example: <code>C:\data\project</code>).</p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="field">
+          <label for="snapshot1-path">Directory path</label>
+          <input id="snapshot1-path" type="text" placeholder="C:\\" />
+        </div>
+        <div class="field">
+          <label for="snapshot1-label">Label</label>
+          <input id="snapshot1-label" type="text" placeholder="Before (baseline)" />
+        </div>
+        <div class="action-row">
+          <button id="snapshot1-create" class="primary">Create Snapshot 1</button>
+          <p id="snapshot1-summary" class="muted">Awaiting path…</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel grid" id="input-panel-2">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Step 2</p>
+          <h2>Capture Snapshot 2 (After)</h2>
+          <p class="subtext">Point to the updated folder on the same host. Backend scans the filesystem and stores metadata.</p>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="field">
+          <label for="snapshot2-path">Directory path</label>
+          <input id="snapshot2-path" type="text" placeholder="C:\\" />
+        </div>
+        <div class="field">
+          <label for="snapshot2-label">Label</label>
+          <input id="snapshot2-label" type="text" placeholder="After (current)" />
+        </div>
+        <div class="action-row">
+          <button id="snapshot2-create" class="primary">Create Snapshot 2</button>
+          <p id="snapshot2-summary" class="muted">Awaiting path…</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="controls">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Step 3</p>
+          <h2>Analyze Behaviour</h2>
+          <p class="subtext">Hits the backend diff endpoint, scores risk (0–100), and returns ranked results.</p>
+        </div>
+        <div class="control-buttons">
+          <button id="compare" class="primary">Compare Snapshots</button>
+        </div>
+      </div>
+      <div class="metrics" id="summary-metrics">
+        <div class="metric">
+          <p class="label">Total Files</p>
+          <p class="value" id="metric-total">0</p>
+        </div>
+        <div class="metric">
+          <p class="label">Added</p>
+          <p class="value added" id="metric-added">0</p>
+        </div>
+        <div class="metric">
+          <p class="label">Deleted</p>
+          <p class="value deleted" id="metric-deleted">0</p>
+        </div>
+        <div class="metric">
+          <p class="label">Modified</p>
+          <p class="value modified" id="metric-modified">0</p>
+        </div>
+        <div class="metric">
+          <p class="label">High Risk</p>
+          <p class="value high" id="metric-high">0</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel grid">
+      <div>
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Behaviour</p>
+            <h2>Change Lists</h2>
+          </div>
+        </div>
+        <div class="lists">
+          <div class="list-card">
+            <h3>Added Files</h3>
+            <ul id="list-added" class="list"></ul>
+          </div>
+          <div class="list-card">
+            <h3>Deleted Files</h3>
+            <ul id="list-deleted" class="list"></ul>
+          </div>
+          <div class="list-card">
+            <h3>Modified Files</h3>
+            <ul id="list-modified" class="list"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Risk Intelligence</p>
+          <h2>Ranked High-Risk Report</h2>
+          <p class="subtext">Sorted by risk score (0–100). Severity: Low (0–33), Medium (34–66), High (67–100).</p>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>File Path</th>
+              <th>Change</th>
+              <th>Score</th>
+              <th>Severity</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="risk-table"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="how-it-works">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">Under the Hood</p>
+          <h2>How it Works</h2>
+        </div>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="badge">1</div>
+          <div>
+            <h3>Collect Metadata</h3>
+            <p>Capture file name, relative path, size, extension, and modified time from the selected folder.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="badge">2</div>
+          <div>
+            <h3>Store in AVL Trees</h3>
+            <p>Each snapshot is inserted into an AVL Tree keyed by file path for O(log n) search, insert, and diff operations.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="badge">3</div>
+          <div>
+            <h3>Compare & Detect</h3>
+            <p>Traverse both trees to find added, deleted, and modified nodes, then score behaviour changes.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="badge">4</div>
+          <div>
+            <h3>Risk Scoring</h3>
+            <p>Size swings, suspicious extensions, and timestamp anomalies increase the risk score to highlight high-risk files first.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Runs entirely in your browser. No data leaves your machine.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
